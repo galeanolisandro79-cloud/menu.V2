@@ -373,6 +373,18 @@ body {
   opacity: 0.08;
 }
 
+/* Cuando hay imagen real del plato */
+.item-imagen {
+  background-size: cover !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  font-size: 0;
+}
+.item-imagen::after {
+  background: none;
+  opacity: 0;
+}
+
 .item-body { padding: 1rem 1rem 0.9rem; }
 .item-name { font-weight: 600; font-size: 0.95rem; margin-bottom: 0.3rem; color: var(--dark); }
 .item-desc { font-size: 0.79rem; color: var(--muted); font-weight: 300; line-height: 1.5; margin-bottom: 0.9rem; }

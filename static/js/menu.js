@@ -37,9 +37,13 @@ function renderItems(catKey, subcatKey) {
   if (!subcat) return;
   document.getElementById('section-title').textContent = subcat.nombre;
   document.getElementById('section-count').textContent = subcat.items.length + ' platos';
-  document.getElementById('items-grid').innerHTML = subcat.items.map(item => `
+  document.getElementById('items-grid').innerHTML = subcat.items.map(item => {
+    const imgArea = item.imagen
+      ? `<div class="item-emoji item-imagen" style="background-image:url('${item.imagen}')"></div>`
+      : `<div class="item-emoji">${item.emoji}</div>`;
+    return `
     <div class="item-card">
-      <div class="item-emoji">${item.emoji}</div>
+      ${imgArea}
       <div class="item-body">
         <div class="item-name">${item.nombre}</div>
         <div class="item-desc">${item.desc}</div>
@@ -51,8 +55,8 @@ function renderItems(catKey, subcatKey) {
           <button class="btn-add" onclick="agregarAlCarrito(${item.id}, '${catKey}', '${subcatKey}')" title="Agregar">+</button>
         </div>
       </div>
-    </div>
-  `).join('');
+    </div>`;
+  }).join('');
 }
 
 // ===== CARRITO =====
