@@ -1,6 +1,5 @@
 from flask import Flask, render_template, request, redirect, session, jsonify
-import hashlib, datetime, os, json, secrets, smtplib, base64
-from email.mime.text import MIMEText
+import hashlib, datetime, os, json, secrets, base64
 import psycopg
 from psycopg.rows import dict_row
 import requests as http_requests
@@ -12,12 +11,9 @@ DATABASE_URL = os.environ.get("DATABASE_URL")
 MPAT = os.environ.get("MPAT", "")
 MPPK = os.environ.get("MPPK", "")
 
-# Email config (usar variables de entorno)
-SMTP_HOST   = os.environ.get("SMTP_HOST", "smtp.gmail.com")
-SMTP_PORT   = int(os.environ.get("SMTP_PORT", "587"))
-SMTP_USER   = os.environ.get("SMTP_USER", "")
-SMTP_PASS   = os.environ.get("SMTP_PASS", "")
-EMAIL_FROM  = os.environ.get("EMAIL_FROM", SMTP_USER)
+# Email via Resend (https://resend.com — gratis hasta 3000 emails/mes)
+RESEND_API_KEY  = os.environ.get("RESEND_API_KEY", "")
+EMAIL_FROM      = os.environ.get("EMAIL_FROM", "TuMenú <onboarding@resend.dev>")
 
 UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), "static", "img", "platos")
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
@@ -291,20 +287,29 @@ def usuario_logueado(): return session.get("usuario")
 def admin_logueado(): return session.get("admin")
 
 def enviar_email(destinatario, asunto, cuerpo_html):
-    """Envía un email usando SMTP configurado en variables de entorno."""
-    if not SMTP_USER or not SMTP_PASS:
-        print(f"[EMAIL SKIP] No hay SMTP configurado. Asunto: {asunto}, Para: {destinatario}")
+    """Envía un email usando la API de Resend (https://resend.com)."""
+    if not RESEND_API_KEY:
+        print(f"[EMAIL SKIP] RESEND_API_KEY no configurada. Para: {destinatario} | Asunto: {asunto}")
         return False
     try:
-        msg = MIMEText(cuerpo_html, "html", "utf-8")
-        msg["Subject"] = asunto
-        msg["From"]    = EMAIL_FROM
-        msg["To"]      = destinatario
-        with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as s:
-            s.starttls()
-            s.login(SMTP_USER, SMTP_PASS)
-            s.sendmail(EMAIL_FROM, [destinatario], msg.as_string())
-        return True
+        resp = http_requests.post(
+            "https://api.resend.com/emails",
+            headers={
+                "Authorization": f"Bearer {RESEND_API_KEY}",
+                "Content-Type": "application/json"
+            },
+            json={
+                "from":    EMAIL_FROM,
+                "to":      [destinatario],
+                "subject": asunto,
+                "html":    cuerpo_html
+            },
+            timeout=10
+        )
+        if resp.status_code in (200, 201):
+            return True
+        print(f"[EMAIL ERROR] Resend respondió {resp.status_code}: {resp.text}")
+        return False
     except Exception as e:
         print(f"[EMAIL ERROR] {e}")
         return False
